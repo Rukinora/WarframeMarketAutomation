@@ -1,0 +1,134 @@
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <link rel="stylesheet" href="src/style.css" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Tauri App</title>
+      
+    </head>
+
+    <body>
+      <script type="module" src="./src/main.js"></script>
+      <!-- LOGIN SCREEN -->
+      <div id="login-screen" class="center-screen">
+        <h1 class="title">Warframe Market Automation</h1>
+        <h1 class="title">Login into your account</h1>
+        <h1 class="title">Copy your warframe profile link and save it</h1>
+        <h1 class="title">Example:</h1>
+        <h1 class="title">https://warframe.market/YourProfileName</h1>
+      </div>
+
+
+
+
+
+      <main id="main-app" class="container">
+        <div class="top-bar">
+          <button class="settings-global">Settings</button>
+
+          <h1 class="title">Warframe Market Automation</h1>
+
+          <button id="delete-all-mods-btn" class="delete-global">DeleteAllMods</button>
+        </div>
+        
+
+        <!-- <div class="row">
+          <a href="https://tauri.app" target="_blank">
+            <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
+          </a>
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
+            target="_blank"
+          >
+            <img
+              src="/assets/javascript.svg"
+              class="logo vanilla"
+              alt="JavaScript logo"
+            />
+          </a>
+        </div> -->
+        <div id="container">
+          <!-- <div id="left-panel">
+            <h2>Controls</h2>
+            <button id="startBtn">Start Automation</button>
+            <button id="stopBtn">Stop Automation</button>
+          </div> -->
+          <div id="top-panel">
+            <div class="grid-container">
+
+              <div class="box" data-item="Arbiter">
+                <img src="./images/Arbiter.png" alt="Arbiter" />
+                <button class="box-btn" data-action="update_prices">Update Prices</button>
+                <button class="box-btn" data-action="add_mods">Add Mods/Update Prices</button>
+              </div>
+
+              <div class="box" data-item="Cephalon">
+                <img src="./images/Cephalon.png" alt="Cephalon" />
+                <button class="box-btn" data-action="update_prices">Update Prices</button>
+                <button class="box-btn" data-action="add_mods">Add Mods/Update Prices</button>
+              </div>
+
+              <div class="box" data-item="New">
+                <img src="./images/New.png" alt="New" />
+                <button class="box-btn" data-action="update_prices">Update Prices</button>
+                <button class="box-btn" data-action="add_mods">Add Mods/Update Prices</button>
+              </div>
+
+              <div class="box" data-item="Steel">
+                <img src="./images/Steel.png" alt="Steel" />
+                <button class="box-btn" data-action="update_prices">Update Prices</button>
+                <button class="box-btn" data-action="add_mods">Add Mods/Update Prices</button>
+              </div>
+
+              <div class="box" data-item="Red">
+                <img src="./images/Red.png" alt="Red" />
+                <button class="box-btn" data-action="update_prices">Update Prices</button>
+                <button class="box-btn" data-action="add_mods">Add Mods/Update Prices</button>
+              </div>
+
+              <div class="box" data-item="The">
+                <img src="./images/The.png" alt="The" />
+                <button class="box-btn" data-action="update_prices">Update Prices</button>
+                <button class="box-btn" data-action="add_mods">Add Mods/Update Prices</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      
+
+        <form class="row-bot" id="bottom-items">
+
+          <!-- Left-middle: Login -->
+          <div class="group">
+            <label class="bot-text">Login</label>
+            <div class="input-row">
+              <button id="login-btn" type="button">Login</button>
+            </div>
+          </div>
+
+          <!-- Center: Warframe Link -->
+          <div class="group center">
+            <label class="bot-text">Warframe Link</label>
+            <div class="input-row">
+              <input id="greet-input" placeholder="Enter warframe profile link" />
+              <button id="greet-save-btn" type="button">Save</button>
+            </div>
+          </div>
+
+          <!-- Right-middle: Min Plat Price -->
+          <div class="group">
+            <label class="bot-text">Min Plat Price</label>
+            <div class="input-row">
+              <input id="min-plat-input" placeholder="Enter price" />
+              <button type="button" id="min-plat-save">Save</button>
+            </div>
+          </div>
+
+        </form>
+        
+        <p id="greet-msg"></p>
+      </main>
+    </body>
+  </html>
