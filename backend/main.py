@@ -12,7 +12,7 @@ from selenium import webdriver
 import deleteAll
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
-
+import addMods
 options = Options()
 firstRun = True
 # 🔥 Dedicated persistent profile
@@ -56,7 +56,7 @@ elif args.action == "update_prices":
 elif args.action == "add_mods":
     driver.get(get_config_val("warframe_link"))
     modList = SyndicateMods.mods(args.item)
-    deleteAll.delete(driver)
+    addMods.add(modList, driver)
     updatePrice.update(modList, driver)
 
 

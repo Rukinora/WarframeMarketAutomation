@@ -4,15 +4,16 @@ import platform
 
 def get_config_path():
     system = platform.system()
+    
     if system == "Windows":
         appdata = os.getenv("APPDATA")
-        return os.path.join(appdata, "com.csrub.warframe", "config.json")
+        return os.path.join(appdata, "WarframeMarket", "config.json")
     elif system == "Darwin":  # macOS
         home = os.path.expanduser("~")
-        return os.path.join(home, "Library", "Application Support", "com.csrub.warframe", "config.json")
+        return os.path.join(home, "Library", "Application Support", "WarframeMarket", "config.json")
     else:  # Linux
         home = os.path.expanduser("~")
-        return os.path.join(home, ".config", "com.csrub.warframe", "config.json")
+        return os.path.join(home, ".config", "WarframeMarket", "config.json")
 
 # Ensure config directory exists
 config_path = get_config_path()
@@ -24,7 +25,7 @@ if not os.path.exists(config_path):
     default_config = {
         "time": 1.0,
         "warframe_link": "",
-        "min_plat_price": 0,
+        "min_plat_price": 20,
         "is_setup_complete": False
     }
     with open(config_path, "w", encoding="utf-8") as f:
