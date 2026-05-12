@@ -8,10 +8,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from loadConfig import get_config_val
 from selenium.webdriver.common.keys import Keys
-#opens warframe link
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 import time
+
 def add(modlist, driver):
     print("ADDMODS: file/function entered", flush=True)
     print(f"ADDMODS: received {len(modlist)} mods", flush=True)

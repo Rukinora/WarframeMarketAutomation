@@ -32,13 +32,22 @@ step4:
 cd C:\Users\csrub\WarframeMarketAutomation
 npm run tauri build
 
+/--------------------------------------------------------------------------------------------------------------/
+Build Application with no Command Prompt:
+rmdir /s "Folder_Path
+::Installs all dependicies
 
-
-
-
-
-
-
+cd "src-tauri"
+cargo clean
+cd..
+rmdir /s /q "backend\build"
+rmdir /s /q "backend\dist"
+del /q /f "backend\main.spec"
+del /q /f "src-tauri\bin\main.exe"
+pyinstaller --onefile --noconsole --collect-all selenium --collect-all webdriver_manager --collect-all keyboard main.py
+cd "backend"
+move dist\main.exe ..\src-tauri\bin
+cd..
 328x 1340y = cahtgpt inut box
 adb shell input tap 328 1340
 

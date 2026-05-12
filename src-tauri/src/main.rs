@@ -25,10 +25,19 @@ fn is_setup_complete(app: AppHandle) -> bool {
     config.is_setup_complete
 }
 
-fn get_config_path(app: &AppHandle) -> PathBuf {
-    let mut path = app.path().app_config_dir().unwrap();
+fn get_config_path(_app: &AppHandle) -> PathBuf {
+    let appdata = std::env::var("APPDATA").unwrap();
+
+    let mut path = PathBuf::from(appdata);
+
+    path.push("WarframeMarket");
+
     std::fs::create_dir_all(&path).unwrap();
+
     path.push("config.json");
+
+    println!("TAURI CONFIG FILE: {:?}", path);
+
     path
 }
 
@@ -54,7 +63,12 @@ fn load_config(path: &PathBuf) -> Config {
 }
 
 fn save_config(path: &PathBuf, config: &Config) {
+    println!("SAVING CONFIG TO: {:?}", path);
+
     let json = serde_json::to_string_pretty(config).unwrap();
+
+    println!("CONFIG CONTENT:\n{}", json);
+
     fs::write(path, json).unwrap();
 }
 
