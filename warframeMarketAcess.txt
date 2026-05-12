@@ -1,56 +1,65 @@
-cd C:\Users\csrub\WarframeMarketAutomation
-npm run tauri build
+/--------------------------------------------------------------------/
+- Build Application with no Command Prompt:
+- Paste the following code into the command prompt while inside of 
+the Project Folder "WarframeMarketAutomation\"
+/--------------------------------------------------------------------/
 
 
-clean and fresh re run Remove artifacts
-cd C:\Users\csrub\WarframeMarketAutomation\src-tauri
+
+::Removes artifacts
+cd src-tauri
 cargo clean
 
+cd ..
 
-Step 1:
-Run this inside your backend folder:
-cd C:\Users\csrub\WarframeMarketAutomation\backend
-
-Step2:
-Remove old PyInstaller builds so stale dependencies don't remain.
-Delete these:
-
-build\
-dist\
-main.spec
-
-Step3:
-pyinstaller --onefile --collect-all selenium --collect-all webdriver_manager --collect-all keyboard main.py
-After building you'll have:
-
-backend\dist\main.exe
-Move it to:
-
-src-tauri\bin\main.exe
-
-step4:
-cd C:\Users\csrub\WarframeMarketAutomation
-npm run tauri build
-
-/--------------------------------------------------------------------------------------------------------------/
-Build Application with no Command Prompt:
-rmdir /s "Folder_Path
-::Installs all dependicies
-
-cd "src-tauri"
-cargo clean
-cd..
+::Removes any old build files
 rmdir /s /q "backend\build"
 rmdir /s /q "backend\dist"
 del /q /f "backend\main.spec"
 del /q /f "src-tauri\bin\main.exe"
+
+cd backend
+
+::Installs all dependicies
 pyinstaller --onefile --noconsole --collect-all selenium --collect-all webdriver_manager --collect-all keyboard main.py
-cd "backend"
+
 move dist\main.exe ..\src-tauri\bin
-cd..
-328x 1340y = cahtgpt inut box
-adb shell input tap 328 1340
 
-adb shell input text hello%sworld
-$s is spaces
+cd ..
 
+::builds app
+npm run tauri build
+
+
+
+/--------------------------------------------------------------------/
+- Build Application with a Command Prompt for debugging:
+- Paste the following code into the command prompt while inside of 
+the Project Folder "WarframeMarketAutomation\"
+/--------------------------------------------------------------------/
+
+
+
+::Removes artifacts
+cd src-tauri
+cargo clean
+
+cd ..
+
+::Removes any old build files
+rmdir /s /q "backend\build"
+rmdir /s /q "backend\dist"
+del /q /f "backend\main.spec"
+del /q /f "src-tauri\bin\main.exe"
+
+cd backend
+
+::Installs all dependicies 
+pyinstaller --onefile --collect-all selenium --collect-all webdriver_manager --collect-all keyboard main.py
+
+move dist\main.exe ..\src-tauri\bin
+
+cd ..
+
+::builds app
+npm run tauri build
