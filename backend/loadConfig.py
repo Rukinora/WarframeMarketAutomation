@@ -5,14 +5,12 @@ import platform
 # Returns the config.json file path depending on the operating system.
 def get_config_path():
     # Detect current operating system
-    system = platform.system()
+    system = platform.system() 
     
     # Windows config path
     if system == "Windows":
-
         # Gets AppData/Roaming directory
         appdata = os.getenv("APPDATA")
-
         # Returns For Example:
         # C:\Users\YourName\AppData\Roaming\WarframeMarket\config.json
         return os.path.join(
@@ -20,15 +18,11 @@ def get_config_path():
             "WarframeMarket",
             "config.json"
         )
-
-
-
-    # macOS config path
+        
+    # macOS config path (Untested)
     elif system == "Darwin":
-
         # Gets current user home directory
         home = os.path.expanduser("~")
-
         # Returns:
         # ~/Library/Application Support/WarframeMarket/config.json
         return os.path.join(
@@ -38,12 +32,8 @@ def get_config_path():
             "WarframeMarket",
             "config.json"
         )
-
-
-
-    # Linux config path
+    # Linux config path (Untested)
     else:
-
         # Gets current user home directory
         home = os.path.expanduser("~")
 
@@ -63,8 +53,6 @@ config_path = get_config_path()
 
 # Debug -> prints exact config location
 print("PYTHON CONFIG PATH:", config_path, flush=True)
-
-
 
 # Creates the config folder automatically if missing.
 # Example:
