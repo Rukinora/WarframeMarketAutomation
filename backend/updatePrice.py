@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from loadConfig import get_config_val
-#opens warframe link
+from waitHelper import wait_for_element, wait_and_click, wait_for_all_elements
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 import time
@@ -20,22 +20,20 @@ def update(newList, driver):
     try:
         print("UPDATEPRICE: trying to switch status to Invisible", flush=True)
 
-        hover_box = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".avatarContainer--O6m1G"))
-        )
+        hover_box = wait_for_element(driver, wait, 
+            (By.CSS_SELECTOR, ".avatarContainer--O6m1G"))
 
-        ActionChains(driver).move_to_element(hover_box).perform()
-        time.sleep(1)
+        if hover_box:
+            ActionChains(driver).move_to_element(hover_box).perform()
 
-        invisible_btn = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "ul.online-switch--UKLjA li.invisible--G4TBX"))
-        )
+            invisible_btn = wait_for_element(driver, wait, 
+                (By.CSS_SELECTOR, "ul.online-switch--UKLjA li.invisible--G4TBX"))
 
-        if "active" not in invisible_btn.get_attribute("class"):
-            driver.execute_script("arguments[0].click();", invisible_btn)
-            print("UPDATEPRICE: switched to Invisible", flush=True)
-        else:
-            print("UPDATEPRICE: already Invisible", flush=True)
+            if invisible_btn and "active" not in invisible_btn.get_attribute("class"):
+                driver.execute_script("arguments[0].click();", invisible_btn)
+                print("UPDATEPRICE: switched to Invisible", flush=True)
+            else:
+                print("UPDATEPRICE: already Invisible", flush=True)
 
     except Exception as e:
         print(f"UPDATEPRICE: could not switch status, continuing anyway: {type(e).__name__}: {e}", flush=True)
@@ -44,20 +42,29 @@ def update(newList, driver):
         print(f"\nUPDATEPRICE: starting mod: {mod}", flush=True)
 
         try:
-            input_box = wait.until(
-                EC.element_to_be_clickable((By.ID, "nameSearch"))
-            )
+            input_box = wait_for_element(driver, wait, 
+                (By.ID, "nameSearch"), 
+                condition=EC.element_to_be_clickable)
+            
+            if not input_box:
+                print("UPDATEPRICE: search input not found, skipping this mod", flush=True)
+                continue
 
             current_text = input_box.get_attribute("value")
 
             if current_text:
                 try:
-                    clear_button = wait.until(
-                        EC.element_to_be_clickable((By.CLASS_NAME, "clear-button--Ddryp"))
-                    )
-                    driver.execute_script("arguments[0].click();", clear_button)
-                    print("UPDATEPRICE: search clear button clicked", flush=True)
-                    time.sleep(1)
+                    clear_button = wait_for_element(driver, wait, 
+                        (By.CLASS_NAME, "clear-button--Ddryp"), 
+                        timeout=5,
+                        condition=EC.element_to_be_clickable)
+                    if clear_button:
+                        driver.execute_script("arguments[0].click();", clear_button)
+                        print("UPDATEPRICE: search clear button clicked", flush=True)
+                    else:
+                        print("UPDATEPRICE: clear button not found, using keyboard clear", flush=True)
+                        input_box.send_keys(Keys.CONTROL + "a")
+                        input_box.send_keys(Keys.DELETE)
                 except Exception as clear_error:
                     print(f"UPDATEPRICE: clear button not found/clickable: {type(clear_error).__name__}", flush=True)
                     input_box.send_keys(Keys.CONTROL + "a")
@@ -65,9 +72,13 @@ def update(newList, driver):
             else:
                 print("UPDATEPRICE: search input already empty", flush=True)
 
-            input_box = wait.until(
-                EC.element_to_be_clickable((By.ID, "nameSearch"))
-            )
+            input_box = wait_for_element(driver, wait, 
+                (By.ID, "nameSearch"), 
+                condition=EC.element_to_be_clickable)
+
+            if not input_box:
+                print("UPDATEPRICE: search input lost, skipping this mod", flush=True)
+                continue
 
             input_box.click()
             input_box.send_keys(Keys.CONTROL + "a")
@@ -75,21 +86,33 @@ def update(newList, driver):
             input_box.send_keys(mod)
 
             print(f"UPDATEPRICE: searched for mod: {mod}", flush=True)
-            time.sleep(1.5)
 
-            edit_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[.//span[normalize-space()='Edit']]"))
-            )
+            edit_button = wait_for_element(driver, wait, 
+                (By.XPATH, "//button[.//span[normalize-space()='Edit']]"), 
+                condition=EC.element_to_be_clickable)
 
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", edit_button)
-            time.sleep(0.5)
-            driver.execute_script("arguments[0].click();", edit_button)
+            if not edit_button:
+                print("UPDATEPRICE: edit button not found, skipping this mod", flush=True)
+                continue
+
+            if not wait_and_click(driver, wait, 
+                (By.XPATH, "//button[.//span[normalize-space()='Edit']]"), 
+                scroll=True):
+                print("UPDATEPRICE: failed to click edit button, skipping this mod", flush=True)
+                continue
 
             print("UPDATEPRICE: clicked Edit", flush=True)
 
-            orders = wait.until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "li.mini__order--MENE4"))
-            )
+            orders = wait_for_all_elements(driver, wait, 
+                (By.CSS_SELECTOR, "li.mini__order--MENE4"))
+
+            if not orders:
+                print(f"UPDATEPRICE WARNING: no market orders found for {mod}, skipping", flush=True)
+                try:
+                    driver.get(get_config_val("warframe_link"))
+                except:
+                    pass
+                continue
 
             print(f"UPDATEPRICE: found {len(orders)} market orders", flush=True)
 
@@ -114,7 +137,6 @@ def update(newList, driver):
                 print(f"UPDATEPRICE WARNING: no online in-game price found for {mod}, skipping", flush=True)
                 try:
                     driver.get(get_config_val("warframe_link"))
-                    time.sleep(3)
                 except:
                     pass
                 continue
@@ -130,61 +152,73 @@ def update(newList, driver):
 
             print(f"UPDATEPRICE: final price to set: {PricePerUnit}", flush=True)
 
-            price_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "editOrderItemPrice"))
-            )
+            price_input = wait_for_element(driver, wait, 
+                (By.ID, "editOrderItemPrice"), 
+                condition=EC.element_to_be_clickable)
+            
+            if not price_input:
+                print("UPDATEPRICE: price input not found, skipping this mod", flush=True)
+                continue
+            
             price_input.click()
             price_input.send_keys(Keys.CONTROL + "a")
             price_input.send_keys(Keys.DELETE)
             price_input.send_keys(str(PricePerUnit))
             print("UPDATEPRICE: filled price", flush=True)
 
-            quantity_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "editOrderQuantity"))
-            )
+            quantity_input = wait_for_element(driver, wait, 
+                (By.ID, "editOrderQuantity"), 
+                condition=EC.element_to_be_clickable)
+            
+            if not quantity_input:
+                print("UPDATEPRICE: quantity input not found, skipping this mod", flush=True)
+                continue
+            
             quantity_input.click()
             quantity_input.send_keys(Keys.CONTROL + "a")
             quantity_input.send_keys(Keys.DELETE)
             quantity_input.send_keys("1")
             print("UPDATEPRICE: filled quantity", flush=True)
 
-            rank_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "editOrderRank"))
-            )
+            rank_input = wait_for_element(driver, wait, 
+                (By.ID, "editOrderRank"), 
+                condition=EC.element_to_be_clickable)
+            
+            if not rank_input:
+                print("UPDATEPRICE: rank input not found, skipping this mod", flush=True)
+                continue
+            
             rank_input.click()
             rank_input.send_keys(Keys.CONTROL + "a")
             rank_input.send_keys(Keys.DELETE)
             rank_input.send_keys("0")
             print("UPDATEPRICE: filled rank", flush=True)
 
-            update_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[.//span[normalize-space()='Update']]"))
-            )
-
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", update_button)
-            time.sleep(0.5)
-            driver.execute_script("arguments[0].click();", update_button)
+            if not wait_and_click(driver, wait, 
+                (By.XPATH, "//button[.//span[normalize-space()='Update']]"), 
+                scroll=True):
+                print("UPDATEPRICE: update button not found, skipping this mod", flush=True)
+                continue
 
             print("UPDATEPRICE: clicked Update", flush=True)
 
-            time.sleep(1.5)
+            close_buttons = wait_for_all_elements(driver, wait, 
+                (By.XPATH, "//button[.//span[normalize-space()='Close']]"))
 
-            close_buttons = wait.until(
-                EC.presence_of_all_elements_located((By.XPATH, "//button[.//span[normalize-space()='Close']]"))
-            )
+            if close_buttons:
+                closed = False
+                for btn in close_buttons:
+                    if btn.is_displayed():
+                        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+                        driver.execute_script("arguments[0].click();", btn)
+                        closed = True
+                        print("UPDATEPRICE: closed modal", flush=True)
+                        break
 
-            closed = False
-            for btn in close_buttons:
-                if btn.is_displayed():
-                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
-                    time.sleep(0.5)
-                    driver.execute_script("arguments[0].click();", btn)
-                    closed = True
-                    print("UPDATEPRICE: closed modal", flush=True)
-                    break
-
-            if not closed:
-                print("UPDATEPRICE WARNING: no visible Close button found", flush=True)
+                if not closed:
+                    print("UPDATEPRICE WARNING: no visible Close button found", flush=True)
+            else:
+                print("UPDATEPRICE WARNING: no close buttons found", flush=True)
 
             print(f"UPDATEPRICE SUCCESS: updated {mod}", flush=True)
 

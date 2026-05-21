@@ -10,6 +10,7 @@ from loadConfig import get_config_val
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from waitHelper import wait_for_element, wait_and_click, wait_for_all_elements
 import time
 
 def add(modlist, driver):
@@ -29,7 +30,6 @@ def add(modlist, driver):
         try:
             # Searches for the "Invisible" tag on profile view. To set profile 
             # from either Online-InGame or Online to Invisible.
-            time.sleep(1)
             wait.until(
                 EC.invisibility_of_element_located(
                     (By.CSS_SELECTOR, "div.modal--Csf66"))
@@ -41,18 +41,11 @@ def add(modlist, driver):
             # Debug -> Step1 Start
             print("ADDMODS: waiting for plus button", flush=True) 
             # Locates button element
-            plus_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "div.big-red__button"))
-            )
-            # Scrolls element into view
-            driver.execute_script(
-                "arguments[0].scrollIntoView({block: 'center'});", plus_button)
-            time.sleep(0.5)
-            # Clicks button element
-            driver.execute_script("arguments[0].click();", plus_button)
+            if not wait_and_click(driver, wait, (By.CSS_SELECTOR, "div.big-red__button"), scroll=True):
+                print("ADDMODS: plus button not found, skipping this mod", flush=True)
+                continue
             # Debug -> Step1 Done
-            print("ADDMODS: clicked plus button", flush=True) 
+            print("ADDMODS: clicked plus button", flush=True)
             
             
             
@@ -60,10 +53,12 @@ def add(modlist, driver):
             # Debug -> Step2 Start
             print("ADDMODS: waiting for item input", flush=True)
             # waits to locate item Input element
-            item_input = wait.until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "input[placeholder='Select Item']"))
-            )
+            item_input = wait_for_element(driver, wait, 
+                (By.CSS_SELECTOR, "input[placeholder='Select Item']"), 
+                condition=EC.element_to_be_clickable)
+            if not item_input:
+                print("ADDMODS: item input not found, skipping this mod", flush=True)
+                continue
             # clicks inside of input element
             item_input.click()
             # select all
@@ -74,12 +69,10 @@ def add(modlist, driver):
             item_input.send_keys(mod)
             # Debug -> Entered Mod Name
             print(f"ADDMODS: typed mod name: {mod}", flush=True)
-            time.sleep(1)
             # Pressed Enter
             item_input.send_keys(Keys.ENTER)
             # Debug -> Pressed Enter Key In Mod Input element; Step 2 Done
             print("ADDMODS: selecting typed mod / place order area", flush=True)
-            time.sleep(1)
             
             
             
@@ -87,9 +80,12 @@ def add(modlist, driver):
             # Debug -> Step 3 Start
             print("ADDMODS: waiting for price input", flush=True)
             # waits for the Item Price Input element
-            price_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "orderItemPrice"))
-            )
+            price_input = wait_for_element(driver, wait, 
+                (By.ID, "orderItemPrice"), 
+                condition=EC.element_to_be_clickable)
+            if not price_input:
+                print("ADDMODS: price input not found, skipping this mod", flush=True)
+                continue
             # clicks in the input element
             price_input.click()
             # select all
@@ -105,9 +101,12 @@ def add(modlist, driver):
 
             ### ----- Step 4 ----- ###
             # wait for quantity input element
-            quantity_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "orderQuantity"))
-            )
+            quantity_input = wait_for_element(driver, wait, 
+                (By.ID, "orderQuantity"), 
+                condition=EC.element_to_be_clickable)
+            if not quantity_input:
+                print("ADDMODS: quantity input not found, skipping this mod", flush=True)
+                continue
             # clicks in element
             quantity_input.click()
             # select all
@@ -123,9 +122,12 @@ def add(modlist, driver):
 
             ### ----- Step 5 ----- ###
             # Waits for rank input box
-            rank_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "orderRank"))
-            )
+            rank_input = wait_for_element(driver, wait, 
+                (By.ID, "orderRank"), 
+                condition=EC.element_to_be_clickable)
+            if not rank_input:
+                print("ADDMODS: rank input not found, skipping this mod", flush=True)
+                continue
             # Clicks rank input
             rank_input.click()
             # Select all existing text
@@ -141,49 +143,44 @@ def add(modlist, driver):
             
             ### ----- Step 6 ----- ###
             # Waits for Post button
-            post_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[.//span[normalize-space()='Post']]"))
-            )
-            # Scrolls Post button into center view
-            driver.execute_script(
-                "arguments[0].scrollIntoView({block: 'center'});", post_button)
-            time.sleep(0.5)
-            # Clicks post button
-            driver.execute_script("arguments[0].click();", post_button)
+            if not wait_and_click(driver, wait, 
+                (By.XPATH, "//button[.//span[normalize-space()='Post']]"), 
+                scroll=True):
+                print("ADDMODS: post button not found, skipping this mod", flush=True)
+                continue
             # Debug -> post button clicked
             print("ADDMODS: clicked Post", flush=True)
-            time.sleep(1)
 
             
             
             ### ----- Step 7 ----- ###
             # Waits for all Close buttons from popup
-            close_buttons = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, "//button[.//span[normalize-space()='Close']]"))
-            )
-            # Tracks if a visible close button was found
-            closed = False
-            # Loops through all close buttons
-            for btn in close_buttons:
-                # Only clicks visible button
-                if btn.is_displayed():
-                    # Scroll into view
-                    driver.execute_script(
-                        "arguments[0].scrollIntoView({block: 'center'});", btn)
-                    time.sleep(0.5)
-                    # Clicks close button
-                    driver.execute_script("arguments[0].click();", btn)
-                    closed = True
-                    # Debug -> popup closed
-                    print("ADDMODS: closed modal", flush=True)
-                    break
-            # Debug warning if no visible close button found        
-            if not closed:
-                print(
-                    "ADDMODS WARNING: no visible Close button found",
-                    flush=True)
+            close_buttons = wait_for_all_elements(driver, wait, 
+                (By.XPATH, "//button[.//span[normalize-space()='Close']]"))
+            
+            if not close_buttons:
+                print("ADDMODS WARNING: no close buttons found", flush=True)
+            else:
+                # Tracks if a visible close button was found
+                closed = False
+                # Loops through all close buttons
+                for btn in close_buttons:
+                    # Only clicks visible button
+                    if btn.is_displayed():
+                        # Scroll into view
+                        driver.execute_script(
+                            "arguments[0].scrollIntoView({block: 'center'});", btn)
+                        # Clicks close button
+                        driver.execute_script("arguments[0].click();", btn)
+                        closed = True
+                        # Debug -> popup closed
+                        print("ADDMODS: closed modal", flush=True)
+                        break
+                # Debug warning if no visible close button found        
+                if not closed:
+                    print(
+                        "ADDMODS WARNING: no visible Close button found",
+                        flush=True)
             # Debug -> mod successfully posted
             print(f"ADDMODS SUCCESS: posted {mod}", flush=True)
 

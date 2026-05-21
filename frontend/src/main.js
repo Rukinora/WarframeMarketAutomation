@@ -1,29 +1,34 @@
 import { invoke } from "@tauri-apps/api/core";
 
+// Initialize behavior after the DOM is ready.
 document.addEventListener("DOMContentLoaded", () => {
 
+  // Root UI containers
   const loginScreen = document.getElementById("login-screen");
   const mainApp = document.getElementById("main-app");
 
+  // Elements used to control onboarding and actions
   const loginBtn = document.getElementById("login-btn");
-  const loginGroup = loginBtn.closest(".group"); // full login section
-  const linkGroup = document.querySelector(".group.center"); // warframe link section
-  const bottomRow = document.getElementById("bottom-items");
+  const loginGroup = loginBtn.closest(".group"); // grouping that contains login UI
+  const linkGroup = document.querySelector(".group.center"); // warframe link input group
+  const bottomRow = document.getElementById("bottom-items"); // area for main app controls
 
-  // ✅ CHECK IF FIRST RUN OR NOT
+  // Immediately check with the backend whether initial setup is complete.
+  // The backend RPC `is_setup_complete` returns a boolean. Based on that we
+  // either show the onboarding (login screen) or the main app UI.
   (async () => {
     try {
       const isSetup = await invoke("is_setup_complete");
 
       if (!isSetup) {
-        // FIRST RUN → show login
+        // First run: hide main app and ensure onboarding groups are visible
         mainApp.style.display = "none";
 
         loginScreen.appendChild(loginGroup);
         loginScreen.appendChild(linkGroup);
 
       } else {
-        // RETURNING USER → skip login
+        // Returning user: show main app and move groups into the bottom row
         loginScreen.style.display = "none";
         mainApp.style.display = "block";
 
@@ -37,15 +42,16 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
 
-  
-  // STEP 1: Move existing elements to login screen
+  // Ensure onboarding groups are placed in the login screen by default and
+  // keep the main UI hidden until we explicitly show it.
   loginScreen.appendChild(loginGroup);
   loginScreen.appendChild(linkGroup);
 
-  // Hide main UI initially
   mainApp.style.display = "none";
 
-  // STEP 2: Hook into EXISTING login button
+  // Clicking the login button triggers a backend action that opens the
+  // browser / starts the OAuth flow. We call the generic `handle_button_click`
+  // RPC with an action of "login" so the Rust backend can handle it.
   loginBtn.addEventListener("click", async () => {
     try {
       await invoke("handle_button_click", {
@@ -57,12 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  
 
-
-
-
-
+  // Save button for the Warframe link (onboarding). Reads the input value,
+  // sends it to the backend via `save_warframe_link`, then moves the UI into
+  // the main app state.
   const saveBtn = document.getElementById("greet-save-btn");
 
   saveBtn.addEventListener("click", async () => {
@@ -72,18 +76,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (value.trim() === "") return;
 
     try {
-      // 1. Save link FIRST
       await invoke("save_warframe_link", { value });
       console.log("Warframe link saved");
 
-      // ⚠️ IMPORTANT: remove this if you don’t have it in Rust
-      // await invoke("close_browser");
-
-      // 2. Move elements back
+      // Move the onboarding groups into the bottom row for the main UI
       bottomRow.appendChild(loginGroup);
       bottomRow.appendChild(linkGroup);
 
-      // 3. Switch UI
+      // Switch visible panes: hide onboarding, show main app
       loginScreen.style.display = "none";
       mainApp.style.display = "block";
 
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // MIN PLAT SAVE
+  // Save minimum plat price: reads numeric input and forwards to backend.
   document.getElementById("min-plat-save").addEventListener("click", async () => {
     const value = parseInt(document.getElementById("min-plat-input").value);
     if (!isNaN(value)) {
@@ -101,10 +101,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // DELETE ALL MODS
+  // Delete all mods button: sends a specific action to the backend handler.
   document.getElementById("delete-all-mods-btn").addEventListener("click", async () => {
-    // For DeleteAllMods, we just call handle_button_click with action "delete_all_mods"
-    const item = ""; // No specific item, since it's global
+    const item = "";
     const action = "delete_all_mods";
 
     console.log("Sending delete all mods request to backend...");
@@ -117,6 +116,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Generic per-item action buttons: each `.box-btn` must have a data-action
+  // and be contained in a `.box` which has a data-item. Clicking forwards
+  // these to the backend via `handle_button_click`.
   document.querySelectorAll(".box-btn").forEach(btn => {
     btn.addEventListener("click", async (e) => {
       const action = e.target.dataset.action;
