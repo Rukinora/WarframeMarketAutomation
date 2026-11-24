@@ -11,6 +11,77 @@ from waitHelper import wait_for_element, wait_and_click, wait_for_all_elements
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 import time
+
+def find_visible_button_by_text(driver, wait, text, timeout=15):
+    xpath = f"//button[contains(normalize-space(.), '{text}') or .//span[normalize-space()='{text}']]"
+    buttons = wait_for_all_elements(driver, wait, (By.XPATH, xpath), timeout=timeout)
+    for btn in buttons:
+        try:
+            if btn.is_displayed():
+                return btn
+        except Exception:
+            continue
+    return None
+
+
+def find_input_fallback(driver, wait, id_value, name_keywords):
+    if id_value:
+        element = wait_for_element(driver, wait, (By.ID, id_value), condition=EC.presence_of_element_located)
+        if element:
+            return element
+
+    for keyword in name_keywords:
+        xpath = (
+            "//input["
+            f"contains(translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') or "
+            f"contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') or "
+            f"contains(translate(@placeholder, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}') or "
+            f"contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{keyword}')"
+            "]"
+        )
+        inputs = wait_for_all_elements(driver, wait, (By.XPATH, xpath), timeout=5)
+        for input_el in inputs:
+            try:
+                if input_el.is_displayed():
+                    return input_el
+            except Exception:
+                continue
+    return None
+
+
+def find_modal_input(driver, wait, id_value, keywords):
+    element = find_input_fallback(driver, wait, id_value, keywords)
+    if element:
+        return element
+
+    xpath = (
+        "//input["
+        "(@type='text' or @type='number' or @type='tel') and ("
+        + " or ".join([
+            f"contains(translate(@placeholder, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{kw}')"
+            for kw in keywords
+        ] + [
+            f"contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{kw}')"
+            for kw in keywords
+        ] + [
+            f"contains(translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{kw}')"
+            for kw in keywords
+        ] + [
+            f"contains(translate(@id, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{kw}')"
+            for kw in keywords
+        ])
+        + ")]"
+    )
+    inputs = wait_for_all_elements(driver, wait, (By.XPATH, xpath), timeout=5)
+    for input_el in inputs:
+        try:
+            if input_el.is_displayed():
+                return input_el
+        except Exception:
+            continue
+    return None
+
+
 def update(newList, driver):
     print("UPDATEPRICE: file/function entered", flush=True)
     print(f"UPDATEPRICE: received {len(newList)} mods", flush=True)
@@ -42,16 +113,14 @@ def update(newList, driver):
         print(f"\nUPDATEPRICE: starting mod: {mod}", flush=True)
 
         try:
-            input_box = wait_for_element(driver, wait, 
-                (By.ID, "nameSearch"), 
-                condition=EC.element_to_be_clickable)
-            
+            input_box = find_input_fallback(driver, wait, "nameSearch", ["search", "nameSearch"])
             if not input_box:
                 print("UPDATEPRICE: search input not found, skipping this mod", flush=True)
                 continue
 
-            current_text = input_box.get_attribute("value")
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].focus();", input_box)
 
+            current_text = input_box.get_attribute("value")
             if current_text:
                 try:
                     clear_button = wait_for_element(driver, wait, 
@@ -63,43 +132,42 @@ def update(newList, driver):
                         print("UPDATEPRICE: search clear button clicked", flush=True)
                     else:
                         print("UPDATEPRICE: clear button not found, using keyboard clear", flush=True)
+                        driver.execute_script("arguments[0].focus();", input_box)
                         input_box.send_keys(Keys.CONTROL + "a")
                         input_box.send_keys(Keys.DELETE)
                 except Exception as clear_error:
                     print(f"UPDATEPRICE: clear button not found/clickable: {type(clear_error).__name__}", flush=True)
+                    driver.execute_script("arguments[0].focus();", input_box)
                     input_box.send_keys(Keys.CONTROL + "a")
                     input_box.send_keys(Keys.DELETE)
             else:
                 print("UPDATEPRICE: search input already empty", flush=True)
 
-            input_box = wait_for_element(driver, wait, 
-                (By.ID, "nameSearch"), 
-                condition=EC.element_to_be_clickable)
+            if not input_box.is_displayed():
+                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", input_box)
 
-            if not input_box:
-                print("UPDATEPRICE: search input lost, skipping this mod", flush=True)
-                continue
-
-            input_box.click()
-            input_box.send_keys(Keys.CONTROL + "a")
-            input_box.send_keys(Keys.DELETE)
+            driver.execute_script("arguments[0].focus(); arguments[0].value = '';", input_box)
             input_box.send_keys(mod)
+            input_box.send_keys(Keys.ENTER)
+            time.sleep(0.5)
 
             print(f"UPDATEPRICE: searched for mod: {mod}", flush=True)
 
-            edit_button = wait_for_element(driver, wait, 
-                (By.XPATH, "//button[.//span[normalize-space()='Edit']]"), 
-                condition=EC.element_to_be_clickable)
+            edit_button = find_visible_button_by_text(driver, wait, "Edit")
+            if not edit_button:
+                wait.until(EC.presence_of_element_located((By.XPATH, "//button[.//span[normalize-space()='Edit']]")))
+                edit_button = find_visible_button_by_text(driver, wait, "Edit")
 
             if not edit_button:
                 print("UPDATEPRICE: edit button not found, skipping this mod", flush=True)
                 continue
 
-            if not wait_and_click(driver, wait, 
-                (By.XPATH, "//button[.//span[normalize-space()='Edit']]"), 
-                scroll=True):
-                print("UPDATEPRICE: failed to click edit button, skipping this mod", flush=True)
-                continue
+            try:
+                driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", edit_button)
+            except Exception:
+                if not wait_and_click(driver, wait, (By.XPATH, "//button[.//span[normalize-space()='Edit']]"), scroll=True):
+                    print("UPDATEPRICE: failed to click edit button, skipping this mod", flush=True)
+                    continue
 
             print("UPDATEPRICE: clicked Edit", flush=True)
 
@@ -152,51 +220,43 @@ def update(newList, driver):
 
             print(f"UPDATEPRICE: final price to set: {PricePerUnit}", flush=True)
 
-            price_input = wait_for_element(driver, wait, 
-                (By.ID, "editOrderItemPrice"), 
-                condition=EC.element_to_be_clickable)
-            
+            price_input = find_modal_input(driver, wait, "editOrderItemPrice", ["price", "plat", "itemprice"])
             if not price_input:
                 print("UPDATEPRICE: price input not found, skipping this mod", flush=True)
                 continue
-            
-            price_input.click()
-            price_input.send_keys(Keys.CONTROL + "a")
-            price_input.send_keys(Keys.DELETE)
+
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].focus(); arguments[0].value = '';", price_input)
             price_input.send_keys(str(PricePerUnit))
             print("UPDATEPRICE: filled price", flush=True)
 
-            quantity_input = wait_for_element(driver, wait, 
-                (By.ID, "editOrderQuantity"), 
-                condition=EC.element_to_be_clickable)
-            
+            quantity_input = find_modal_input(driver, wait, "editOrderQuantity", ["quantity", "qty"])
             if not quantity_input:
                 print("UPDATEPRICE: quantity input not found, skipping this mod", flush=True)
                 continue
-            
-            quantity_input.click()
-            quantity_input.send_keys(Keys.CONTROL + "a")
-            quantity_input.send_keys(Keys.DELETE)
+
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].focus(); arguments[0].value = '';", quantity_input)
             quantity_input.send_keys("1")
             print("UPDATEPRICE: filled quantity", flush=True)
 
-            rank_input = wait_for_element(driver, wait, 
-                (By.ID, "editOrderRank"), 
-                condition=EC.element_to_be_clickable)
-            
+            rank_input = find_modal_input(driver, wait, "editOrderRank", ["rank", "polarity"])
             if not rank_input:
                 print("UPDATEPRICE: rank input not found, skipping this mod", flush=True)
                 continue
-            
-            rank_input.click()
-            rank_input.send_keys(Keys.CONTROL + "a")
-            rank_input.send_keys(Keys.DELETE)
+
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].focus(); arguments[0].value = '';", rank_input)
             rank_input.send_keys("0")
             print("UPDATEPRICE: filled rank", flush=True)
 
-            if not wait_and_click(driver, wait, 
-                (By.XPATH, "//button[.//span[normalize-space()='Update']]"), 
-                scroll=True):
+            update_button = find_visible_button_by_text(driver, wait, "Update")
+            if update_button:
+                try:
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", update_button)
+                    print("UPDATEPRICE: clicked Update", flush=True)
+                except Exception:
+                    if not wait_and_click(driver, wait, (By.XPATH, "//button[.//span[normalize-space()='Update']]"), scroll=True):
+                        print("UPDATEPRICE: update button not found, skipping this mod", flush=True)
+                        continue
+            else:
                 print("UPDATEPRICE: update button not found, skipping this mod", flush=True)
                 continue
 

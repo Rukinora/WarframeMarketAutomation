@@ -81,7 +81,7 @@ def add(modlist, driver):
             print("ADDMODS: waiting for price input", flush=True)
             # waits for the Item Price Input element
             price_input = wait_for_element(driver, wait, 
-                (By.ID, "orderItemPrice"), 
+                (By.ID, "orderPrice"), 
                 condition=EC.element_to_be_clickable)
             if not price_input:
                 print("ADDMODS: price input not found, skipping this mod", flush=True)
